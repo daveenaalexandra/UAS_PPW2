@@ -6,14 +6,17 @@ use App\Models\Pekerjaan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\Http;
 
 class PekerjaanController extends Controller
 {
     public function index(Request $request) {
         $keyword = $request->get('keyword');
-        $data = Pekerjaan::when($keyword, function ($query) use ($keyword) {
-            $query->where('nama', 'like', "%{$keyword}%")->orWhere('deskripsi', 'like', "%{$keyword}%");
-        })->get();
+        $data = Pekerjaan::withCount('pegawai')
+        ->when($keyword, function ($query) use ($keyword) {
+            $query->where('nama', 'like', "%{$keyword}%")
+            ->orWhere('deskripsi', 'like', "%{$keyword}%");
+        })->Paginate(5);
         return view('pekerjaan.index', compact('data'));
     }
 
@@ -25,9 +28,22 @@ class PekerjaanController extends Controller
         $validator = Validator::make($request->all(), [
             'nama' => 'required|string',
             'deskripsi' => 'required|string',
+            'g-recaptcha-response' => 'required' // Pastikan user mencentang captcha
+        ], [
+            'g-recaptcha-response.required' => 'Silakan centang Captcha terlebih dahulu!'
         ]);
 
-        if ($validator->fails()) return redirect()->back()->with($validator->errors()->all());
+        if ($validator->fails()) return redirect()->back()->withErrors($validator)->withInput();
+        
+        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
+            'secret' => env('RECAPTCHA_SECRET_KEY'),
+            'response' => $request->input('g-recaptcha-response'),
+        ]);
+
+        // Cek apakah Google bilang VALID atau TIDAK
+        if (!$response->json()['success']) {
+            return redirect()->back()->withErrors(['captcha' => 'Verifikasi Robot Gagal, coba lagi.'])->withInput();
+        }
 
         $data = new Pekerjaan();
         $data->nama = $request->nama;

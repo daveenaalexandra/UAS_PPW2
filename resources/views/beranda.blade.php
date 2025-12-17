@@ -1,39 +1,20 @@
-@extends('base')
-@section('title','Beranda')
-@section('menuberanda', 'underline decoration-4 underline-offset-7')
-@section('content')
-    <section class="p-4 bg-white rounded-lg">
-        <h1 class="text-3xl font-bold text-[#C0392B] mb-6 text-center">Statistik</h1>
-        <div class="mx-auto">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <div class="flex justify-center">
-                        <canvas id="chart1" class="w-full max-w-[600px]"></canvas>
-                    </div>
-                </div>
-                <div class="flex justify-center">
-                    <canvas id="chart2" class="w-full max-w-[600px]"></canvas>
-                </div>
-            </div>
-        </div>
-    </section>
-@endsection
 @push('js')
     <script src="{{ asset('plugins/chartjs-4/chart-4.5.0.js') }}"></script>
     <script>
-        // --- CHART 1: GENDER (PIE) ---
+        // --- CHART 1: GENDER ---
         const ctx1 = document.getElementById('chart1');
         new Chart(ctx1, {
             type: 'pie',
             data: {
-                labels: ["Laki-laki", "Perempuan"], // Label Gender
+                // Ambil Label dari Controller
+                labels: {!! json_encode($genderLabels) !!}, 
                 datasets: [{
-                    label: 'Jumlah Pegawai',
-                    // 👇 BAGIAN INI KITA UBAH JADI VARIABEL PHP 👇
-                    data: [{{ $totalMale }}, {{ $totalFemale }}], 
+                    label: 'Jumlah',
+                    // Ambil Data Angka dari Controller
+                    data: {!! json_encode($genderCounts) !!},
                     backgroundColor: [
-                        '#3b82f6', // Biru
-                        '#ec4899'  // Pink
+                        '#3b82f6', // Biru (untuk data pertama)
+                        '#ec4899'  // Pink (untuk data kedua)
                     ]
                 }]
             },
@@ -50,17 +31,17 @@
             }
         });
 
-        // --- CHART 2: TOP 5 PEKERJAAN (BAR) ---
+        // --- CHART 2: TOP PEKERJAAN ---
         const ctx2 = document.getElementById('chart2').getContext('2d');
         new Chart(ctx2, {
             type: 'bar',
             data: {
-                // 👇 AMBIL LABEL DARI CONTROLLER (JSON) 👇
-                labels: {!! json_encode($labelPekerjaan) !!}, 
+                // Ambil Label Nama Pekerjaan dari Controller
+                labels: {!! json_encode($jobLabels) !!},
                 datasets: [{
                     label: 'Jumlah Pegawai',
-                    // 👇 AMBIL DATA ANGKA DARI CONTROLLER (JSON) 👇
-                    data: {!! json_encode($jumlahPegawai) !!}, 
+                    // Ambil Data Jumlah Pegawai dari Controller
+                    data: {!! json_encode($jobCounts) !!},
                     backgroundColor: '#C0392B',
                     borderColor: '#922B21',
                     borderWidth: 1,
@@ -81,7 +62,7 @@
                     y: {
                         beginAtZero: true,
                         ticks: {
-                            stepSize: 1 // Agar sumbu Y angkanya bulat (orang tidak mungkin desimal)
+                            stepSize: 1 // Agar sumbu Y angkanya bulat (tidak desimal)
                         }
                     },
                 }
